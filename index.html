@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jimmy · Stratégie de contenu & Montage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #0b0b12;
+      --surface: #15151f;
+      --surface-2: #1c1c28;
+      --magenta: #ff2e79;
+      --cyan: #1de9d8;
+      --amber: #ffce54;
+      --text: #f5f4f2;
+      --muted: #9997a3;
+      --line: rgba(255,255,255,0.08);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{
+      background:var(--bg);
+      color:var(--text);
+      font-family:'Space Grotesk', sans-serif;
+      overflow-x:hidden;
+    }
+    h1,h2,h3{font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.01em;}
+    .mono{font-family:'JetBrains Mono', monospace;}
+    a{color:inherit; text-decoration:none;}
+    .wrap{max-width:1180px; margin:0 auto; padding:0 32px;}
+    
+    #playhead-track{
+      position:fixed; top:0; left:0; width:100%; height:3px;
+      background:var(--surface-2); z-index:200;
+    }
+    #playhead-fill{
+      height:100%; width:0%;
+      background:linear-gradient(90deg, var(--cyan), var(--magenta));
+    }
+    #timecode-badge{
+      position:fixed; top:10px; right:24px; z-index:200;
+      font-size:11px; padding:4px 10px; border-radius:3px;
+      background:var(--surface); border:1px solid var(--line);
+      color:var(--amber); letter-spacing:0.05em;
+    }
+    
+    header{
+      position:sticky; top:0; z-index:150;
+      background:rgba(11,11,18,0.85); backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--line);
+    }
+    nav.wrap{
+      display:flex; align-items:center; justify-content:space-between;
+      height:72px;
+    }
+    .logo{font-family:'Anton', sans-serif; font-size:22px; letter-spacing:0.02em;}
+    .logo span{color:var(--magenta);}
+    .navlinks{display:flex; gap:32px; font-size:14px; text-transform:uppercase; letter-spacing:0.08em;}
+    .navlinks a{color:var(--muted); position:relative; padding:4px 0; transition:color .2s;}
+    .navlinks a:hover{color:var(--text);}
+    .navlinks a::after{
+      content:""; position:absolute; left:0; bottom:0; height:2px; width:0;
+      background:var(--cyan); transition:width .25s;
+    }
+    .navlinks a:hover::after{width:100%;}
+    
+    .hero{
+      position:relative;
+      padding:120px 0 100px;
+      border-bottom:1px solid var(--line);
+      overflow:hidden;
+    }
+    .hero::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+      radial-gradient(600px 300px at 15% 20%, rgba(255,46,121,0.18), transparent 60%),
+      radial-gradient(600px 320px at 85% 80%, rgba(29,233,216,0.15), transparent 60%);
+      pointer-events:none;
+    }
+    .hero-inner{position:relative; z-index:2;}
+    .eyebrow{
+      display:inline-flex; align-items:center; gap:8px;
+      font-family:'JetBrains Mono', monospace; font-size:12px;
+      color:var(--amber); letter-spacing:0.1em;
+      border:1px solid rgba(255,206,84,0.35); border-radius:20px;
+      padding:6px 14px; margin-bottom:28px;
+    }
+    .eyebrow .dot{width:7px; height:7px; border-radius:50%; background:var(--magenta); animation:pulse 1.6s infinite;}
+    @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.25;}}
+    .hero h1{
+      font-size:clamp(48px, 8vw, 96px);
+      line-height:0.95;
+      margin-bottom:24px;
+    }
+    .hero h1 .grad{
+      background:linear-gradient(90deg, var(--cyan), var(--magenta));
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    .hero p.lead{
+      max-width:560px; font-size:18px; color:var(--muted); line-height:1.6;
+      margin-bottom:40px;
+    }
+    .hero-cta{display:flex; gap:16px; flex-wrap:wrap;}
+    .btn{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:14px 26px; border-radius:4px; font-size:14px;
+      text-transform:uppercase; letter-spacing:0.06em; font-weight:600;
+      transition:transform .2s, box-shadow .2s;
+    }
+    .btn-primary{
+      background:var(--magenta); color:#0b0b12;
+    }
+    .btn-primary:hover{transform:translateY(-2px); box-shadow:0 8px 24px rgba(255,46,121,0.35);}
+    .btn-ghost{
+      border:1px solid var(--line); color:var(--text);
+    }
+    .btn-ghost:hover{border-color:var(--cyan); color:var(--cyan);}
+    
+    .player-frame{
+      margin-top:72px; position:relative;
+      border:1px solid var(--line); border-radius:8px;
+      background:var(--surface);
+      aspect-ratio:16/7; max-height:340px;
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+    }
+    .player-frame::before{
+      content:""; position:absolute; inset:0;
+      background:repeating-linear-gradient(115deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 6px);
+    }
+    .marquee{
+      width:100%; overflow:hidden; position:relative; z-index:2;
+      -webkit-mask-image:linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+      mask-image:linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    }
+    .marquee-track{
+      display:flex; gap:48px; width:max-content;
+      animation:marquee 22s linear infinite;
+    }
+    .marquee-track span{
+      font-family:'Anton', sans-serif; font-size:28px; letter-spacing:0.02em;
+      color:var(--text); opacity:0.5; white-space:nowrap; display:flex; align-items:center; gap:16px;
+    }
+    .marquee-track span::after{
+      content:"◆"; font-size:12px; color:var(--cyan); opacity:0.6;
+    }
+    @keyframes marquee{
+      from{transform:translateX(0);}
+      to{transform:translateX(-50%);}
+    }
+    
+    section{padding:100px 0; border-bottom:1px solid var(--line);}
+    .clip-marker{
+      font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:12px;
+      color:var(--cyan); letter-spacing:0.16em; margin-bottom:16px;
+      display:inline-flex; align-items:center; gap:10px;
+    }
+    .clip-marker::before{
+      content:""; width:18px; height:2px; background:var(--cyan); display:inline-block;
+    }
+    .section-title{font-size:clamp(30px,4vw,46px); margin-bottom:16px;}
+    .section-sub{color:var(--muted); font-size:16px; max-width:600px; margin-bottom:56px; line-height:1.6;}
+    
+    .about-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:64px; align-items:start;}
+    @media (max-width:860px){.about-grid{grid-template-columns:1fr;}}
+    .about-grid p{color:var(--muted); line-height:1.8; margin-bottom:18px; font-size:16px;}
+    .about-grid p strong{color:var(--text);}
+    .skills{display:flex; flex-wrap:wrap; gap:10px; margin-top:8px;}
+    .skill-tag{
+      font-family:'JetBrains Mono', monospace; font-size:12.5px;
+      padding:8px 14px; border-radius:4px;
+      background:var(--surface); border:1px solid var(--line); color:var(--text);
+    }
+    .skill-tag.magenta{border-color:rgba(255,46,121,0.4); color:var(--magenta);}
+    .skill-tag.cyan{border-color:rgba(29,233,216,0.4); color:var(--cyan);}
+    
+    .gallery{display:grid; grid-template-columns:repeat(3, 1fr); gap:24px;}
+    @media (max-width:900px){.gallery{grid-template-columns:repeat(2,1fr);}}
+    @media (max-width:600px){.gallery{grid-template-columns:1fr;}}
+    .clip{
+      background:var(--surface); border:1px solid var(--line); border-radius:8px;
+      overflow:hidden; transition:transform .25s, border-color .25s;
+    }
+    .clip:hover{transform:translateY(-6px); border-color:var(--cyan);}
+    .thumb{
+      aspect-ratio:16/10; position:relative;
+      background:
+      linear-gradient(135deg, var(--surface-2), var(--surface));
+      display:flex; align-items:center; justify-content:center;
+    }
+    .thumb .placeholder-icon{width:40px; height:40px; opacity:0.35;}
+    .thumb .badge{
+      position:absolute; top:10px; left:10px;
+      font-family:'JetBrains Mono', monospace; font-size:10.5px;
+      padding:4px 8px; border-radius:3px; letter-spacing:0.04em;
+      background:rgba(0,0,0,0.55); border:1px solid var(--line);
+    }
+    .thumb .duration{
+      position:absolute; bottom:10px; right:10px;
+      font-family:'JetBrains Mono', monospace; font-size:10.5px;
+      padding:3px 7px; border-radius:3px;
+      background:rgba(0,0,0,0.65); color:var(--amber);
+    }
+    .thumb .fs-btn{
+      position:absolute; bottom:10px; right:10px; z-index:3;
+      width:28px; height:28px; border-radius:4px;
+      background:rgba(0,0,0,0.6); border:1px solid var(--line);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; padding:0;
+    }
+    .thumb .fs-btn:hover{border-color:var(--cyan);}
+    .clip-body{padding:18px 20px 22px;}
+    .clip-body h3{font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:16px; text-transform:none; margin-bottom:6px;}
+    .clip-body p{font-size:13.5px; color:var(--muted); line-height:1.55;}
+    .add-clip{
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:10px; color:var(--muted); border:1px dashed var(--line); border-radius:8px;
+      min-height:100%; padding:40px 20px; font-size:13px; text-align:center;
+    }
+    .add-clip .plus{font-size:28px; color:var(--cyan);}
+    
+    .project-card{
+      background:var(--surface); border:1px solid var(--line); border-radius:8px;
+      overflow:hidden; transition:transform .25s, border-color .25s;
+      display:flex; flex-direction:column;
+    }
+    .project-card:hover{transform:translateY(-6px); border-color:var(--amber);}
+    .project-card .proj-preview{
+      aspect-ratio:16/10; position:relative; background:var(--surface-2);
+      overflow:hidden;
+    }
+    .project-card .proj-preview iframe{
+      width:166%; height:166%;
+      transform:scale(0.6); transform-origin:top left;
+      border:0; pointer-events:none;
+    }
+    .project-card .proj-preview .badge{
+      position:absolute; top:10px; left:10px; z-index:2;
+      font-family:'JetBrains Mono', monospace; font-size:10.5px;
+      padding:4px 8px; border-radius:3px; letter-spacing:0.04em;
+      background:rgba(0,0,0,0.55); border:1px solid var(--line); color:var(--amber);
+    }
+    .project-card .proj-body{padding:18px 20px 22px; display:flex; flex-direction:column; flex:1;}
+    .project-card .proj-tag{
+      font-family:'JetBrains Mono', monospace; font-size:10.5px;
+      color:var(--amber); letter-spacing:0.06em; margin-bottom:10px; display:block;
+    }
+    .project-card h3{font-family:'Space Grotesk'; font-weight:700; font-size:17px; text-transform:none; margin-bottom:8px;}
+    .project-card p{color:var(--muted); font-size:13.5px; line-height:1.55; margin-bottom:20px; flex:1;}
+    .project-card .proj-link{
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      padding:12px 18px; border-radius:4px;
+      background:var(--amber); color:#0b0b12;
+      font-size:13px; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.05em;
+      transition:transform .2s, box-shadow .2s;
+    }
+    .project-card .proj-link:hover{transform:translateY(-2px); box-shadow:0 8px 24px rgba(255,206,84,0.3);}
+    .project-card .proj-link svg{width:14px; height:14px;}
+    
+    .subgroup{margin-bottom:64px;}
+    .subgroup:last-child{margin-bottom:0;}
+    .subgroup-head{
+      display:flex; align-items:center; gap:14px; margin-bottom:28px;
+    }
+    .subgroup-head h3{
+      font-family:'Space Grotesk', sans-serif; font-weight:700; text-transform:none;
+      font-size:20px; letter-spacing:0; color:var(--text);
+    }
+    .subgroup-head .count{
+      font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--muted);
+      border:1px solid var(--line); border-radius:20px; padding:3px 10px;
+    }
+    .subgroup-head::after{
+      content:""; flex:1; height:1px; background:var(--line);
+    }
+    .subgroup-head.tag-video h3::before{content:"▶ "; color:var(--magenta); font-size:14px;}
+    .subgroup-head.tag-photo h3::before{content:"◆ "; color:var(--cyan); font-size:14px;}
+    
+    .exp-card{
+      display:grid; grid-template-columns:180px 1fr; gap:40px;
+      padding:32px 0; border-top:1px solid var(--line);
+    }
+    .exp-card:last-child{border-bottom:none;}
+    @media (max-width:700px){.exp-card{grid-template-columns:1fr; gap:12px;}}
+    .exp-date{font-family:'JetBrains Mono', monospace; color:var(--amber); font-size:13px;}
+    .exp-role{font-size:20px; font-weight:600; margin-bottom:6px; font-family:'Space Grotesk';}
+    .exp-org{color:var(--cyan); font-size:14px; margin-bottom:12px;}
+    .exp-desc{color:var(--muted); font-size:15px; line-height:1.7; max-width:640px;}
+    
+    .extras-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:24px;}
+    @media (max-width:860px){.extras-grid{grid-template-columns:1fr;}}
+    .extra-card{
+      background:var(--surface); border:1px solid var(--line); border-radius:8px;
+      padding:28px 24px; position:relative; overflow:hidden;
+    }
+    .extra-card .tag{
+      font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--muted);
+      letter-spacing:0.08em; margin-bottom:14px; display:block;
+    }
+    .extra-card h3{font-family:'Space Grotesk'; font-weight:700; font-size:19px; margin-bottom:10px; text-transform:none;}
+    .extra-card p{color:var(--muted); font-size:14px; line-height:1.6;}
+    .extra-card::after{
+      content:""; position:absolute; top:-40px; right:-40px;
+      width:110px; height:110px; border-radius:50%;
+      background:radial-gradient(circle, rgba(255,46,121,0.18), transparent 70%);
+    }
+    .extra-card:nth-child(2)::after{background:radial-gradient(circle, rgba(29,233,216,0.18), transparent 70%);}
+    .extra-card:nth-child(3)::after{background:radial-gradient(circle, rgba(255,206,84,0.18), transparent 70%);}
+    
+    .contact-wrap{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:40px;}
+    .contact-title{font-size:clamp(34px,5vw,58px); max-width:600px;}
+    .contact-links{display:flex; flex-direction:column; gap:14px; font-size:16px;}
+    .contact-links a{
+      display:flex; align-items:center; gap:10px; color:var(--text);
+      padding-bottom:4px; border-bottom:1px solid transparent; transition:border-color .2s, color .2s;
+    }
+    .contact-links a:hover{border-color:var(--cyan); color:var(--cyan);}
+    
+    footer{
+      padding:32px 0; text-align:center;
+      font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--muted);
+    }
+    
+    /* LIGHTBOX */
+    #lightbox{
+      position:fixed; inset:0; z-index:500;
+      background:rgba(5,5,8,0.92);
+      display:none; align-items:center; justify-content:center;
+      padding:40px;
+    }
+    #lightbox.open{display:flex;}
+    #lightbox img{
+      max-width:90vw; max-height:88vh;
+      border-radius:6px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.6);
+    }
+    #lightbox-close{
+      position:absolute; top:24px; right:28px;
+      width:40px; height:40px; border-radius:50%;
+      background:var(--surface); border:1px solid var(--line);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+    }
+    #lightbox-close:hover{border-color:var(--cyan);}
+    .thumb img{cursor:zoom-in;}
+  </style>
+</head>
+<body>
+  
+  <div id="playhead-track"><div id="playhead-fill"></div></div>
+  <div id="timecode-badge" class="mono">00:00:00:00</div>
+  
+  <header>
+    <nav class="wrap">
+      <div class="logo">JIMMY<span>.</span></div>
+      <div class="navlinks">
+        <a href="#about">À propos</a>
+        <a href="#gallery">Montage</a>
+        <a href="#exp">Expérience</a>
+        <a href="#extras">Extras</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </nav>
+  </header>
+  
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <span class="eyebrow"><span class="dot"></span>DISPONIBLE POUR PROJETS · NOUMÉA</span>
+      <h1>Je pense la <span class="grad">stratégie</span><br>avant de raconter.</h1>
+      <p class="lead">Étudiant en BUT MMI, spécialisation Stratégie de communication & UX. Je conçois des contenus qui ont un objectif, et je les mets en image en montage vidéo et photo.</p>
+      <div class="hero-cta">
+        <a href="#gallery" class="btn btn-primary">Voir mes montages</a>
+        <a href="#contact" class="btn btn-ghost">Me contacter</a>
+      </div>
+      
+      <div class="player-frame">
+        <div class="marquee">
+          <div class="marquee-track">
+            <span>Stratégie de communication</span>
+            <span>Montage vidéo</span>
+            <span>Retouche photo</span>
+            <span>Storytelling</span>
+            <span>UX & Design d'expérience</span>
+            <span>Stratégie de communication</span>
+            <span>Montage vidéo</span>
+            <span>Retouche photo</span>
+            <span>Storytelling</span>
+            <span>UX & Design d'expérience</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section id="about">
+    <div class="wrap about-grid">
+      <div>
+        <span class="clip-marker">À PROPOS</span>
+        <h2 class="section-title">Qui je suis</h2>
+        <p><strong>Jimmy</strong>, étudiant en 2ᵉ année de BUT MMI à l'IUT de Nouvelle-Calédonie, spécialisation Stratégie de communication & UX. Je m'intéresse à la façon dont un message atteint la bonne personne, au bon moment, sur le bon canal.</p>
+        <p>Mon approche : comprendre une cible, définir un objectif, puis choisir le bon format pour y répondre, que ce soit un benchmark, des personas, un calendrier éditorial, ou simplement une vidéo bien montée. Le montage vidéo et la photo restent mon moyen préféré de donner vie à une stratégie.</p>
+        <p>Cette double compétence, stratégie et exécution créative, s'est concrétisée à travers plusieurs projets, dont un exercice de création pour une agence de communication locale.</p>
+      </div>
+      <div>
+        <span class="clip-marker">COMPÉTENCES</span>
+        <div class="skills">
+          <span class="skill-tag cyan">Stratégie de communication</span>
+          <span class="skill-tag cyan">UX / Personas</span>
+          <span class="skill-tag cyan">Benchmark & SWOT</span>
+          <span class="skill-tag cyan">Calendrier éditorial</span>
+          <span class="skill-tag cyan">Réseaux sociaux</span>
+          <span class="skill-tag magenta">Montage vidéo</span>
+          <span class="skill-tag magenta">CapCut</span>
+          <span class="skill-tag magenta">Retouche photo</span>
+          <span class="skill-tag magenta">Storytelling</span>
+          <span class="skill-tag">Canva</span>
+          <span class="skill-tag">Figma</span>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section id="gallery">
+    <div class="wrap">
+      <span class="clip-marker">MONTAGE VIDÉO & PHOTO</span>
+      <h2 class="section-title">Derniers montages</h2>
+      <p class="section-sub">Une sélection de mes créations récentes : formats courts pensés pour les réseaux, montages personnels et retouches photo.</p>
+      
+      <div class="subgroup">
+        <div class="subgroup-head tag-video">
+          <h3>Montages vidéo</h3>
+          <span class="count mono">3</span>
+        </div>
+        <div class="gallery">
+          
+          <div class="clip">
+            <div class="thumb">
+              <span class="badge mono">VIDÉO</span>
+              <button type="button" class="fs-btn" onclick="goFullscreen(this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5f4f2" stroke-width="2"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+              </button>
+              <iframe src="https://drive.google.com/file/d/1IgukPrrghoeX9WgGhc5AgGA80KjgELQi/preview"
+              style="width:100%;height:100%;border:0;"
+              allow="autoplay; fullscreen" allowfullscreen></iframe>
+            </div>
+            <div class="clip-body">
+              <h3>Making-of Seconde Chance</h3>
+              <p>Making-of d'un tournage "Seconde Chance" un clip musique dans le cadre d'un projet audio visuel</p>
+            </div>
+          </div>
+          
+          <div class="clip">
+            <div class="thumb">
+              <span class="badge mono">VIDÉO</span>
+              <button type="button" class="fs-btn" onclick="goFullscreen(this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5f4f2" stroke-width="2"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+              </button>
+              <iframe src="https://drive.google.com/file/d/1xK9DHsQr0zp3D76amrbHMse-K0FoSdZZ/preview"
+              style="width:100%;height:100%;border:0;"
+              allow="autoplay; fullscreen" allowfullscreen></iframe>
+            </div>
+            <div class="clip-body">
+              <h3>L'anneau</h3>
+              <p>un court metrage sans son en première dans la spécialité cinéma</p>
+            </div>
+          </div>
+          
+          <div class="clip">
+            <div class="thumb">
+              <span class="badge mono">VIDÉO</span>
+              <button type="button" class="fs-btn" onclick="goFullscreen(this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5f4f2" stroke-width="2"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+              </button>
+              <iframe src="https://drive.google.com/file/d/10cne9ZU2cHZFjBy0hOpcd6obbaE0bB1R/preview"
+              style="width:100%;height:100%;border:0;"
+              allow="autoplay; fullscreen" allowfullscreen></iframe>
+            </div>
+            <div class="clip-body">
+              <h3>BREF j'ai croiser mon ex</h3>
+              <p>Un projet BREF avec comme partenaire Canal+</p>
+            </div>
+          </div>
+
+          <div class="add-clip">
+            <span class="plus">+</span>
+            <span>Prochain montage bientôt disponible</span>
+          </div>
+
+        </div>
+      </div>
+      
+      <div class="subgroup">
+        <div class="subgroup-head tag-photo">
+          <h3>Photos & retouches Photoshop</h3>
+          <span class="count mono">2</span>
+        </div>
+        <div class="gallery">
+          
+          <div class="clip">
+            <div class="thumb">
+              <span class="badge mono">PHOTO</span>
+              <img src="https://drive.google.com/thumbnail?id=1Gvb1bWjzDAL8ffXgP6WkiUmyCgpefyzm&sz=w1000" style="width:100%;height:100%;object-fit:cover;" onclick="openLightbox('https://drive.google.com/thumbnail?id=1Gvb1bWjzDAL8ffXgP6WkiUmyCgpefyzm&sz=w1600')">
+            </div>
+            <div class="clip-body">
+              <h3>Portrait</h3>
+              <p>Photo prise lors d'une journée de fin d'année de lycée</p>
+            </div>
+          </div>
+
+          <div class="clip">
+            <div class="thumb">
+              <span class="badge mono">PHOTO</span>
+              <img src="https://drive.google.com/thumbnail?id=1wYeNbaCpvPmw971fO4wPdkzhv2w1KD-7&sz=w1000" style="width:100%;height:100%;object-fit:cover;" onclick="openLightbox('https://drive.google.com/thumbnail?id=1wYeNbaCpvPmw971fO4wPdkzhv2w1KD-7&sz=w1600')">
+            </div>
+            <div class="clip-body">
+              <h3>Titre de la série</h3>
+              <p>Description courte du projet : contexte, objectif et outils utilisés.</p>
+            </div>
+          </div>
+          
+          <div class="add-clip">
+            <span class="plus">+</span>
+            <span>Prochaine série bientôt disponible</span>
+          </div>
+          
+        </div>
+      </div>
+      
+      <div class="subgroup">
+        <div class="subgroup-head">
+          <h3 style="text-transform:none;">Projets web</h3>
+          <span class="count mono">1</span>
+        </div>
+        <div class="gallery">
+          
+          <div class="project-card">
+            <div class="proj-preview">
+              <span class="badge mono">SITE WEB</span>
+              <iframe src="https://dataviz-challenge.netlify.app/" loading="lazy"></iframe>
+            </div>
+            <div class="proj-body">
+              <span class="proj-tag">SAE 302 · DATA VISUALISATION</span>
+              <h3>Dataviz Challenge</h3>
+              <p>Défi de visualisation de données réalisé en équipe : mise en forme et exploration interactive d'un jeu de données, pensée pour la clarté de lecture et l'expérience utilisateur.</p>
+              <a href="https://dataviz-challenge.netlify.app/" target="_blank" rel="noopener" class="proj-link">
+                Voir le site en direct
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+              </a>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+      
+    </div>
+  </section>
+  
+  <section id="exp">
+    <div class="wrap">
+      <span class="clip-marker">EXPÉRIENCE</span>
+      <h2 class="section-title">Parcours pro</h2>
+      
+      <div class="exp-card">
+        <div class="exp-date mono">NOV·DÉC 2025</div>
+        <div>
+          <div class="exp-role">Stagiaire création de contenu</div>
+          <div class="exp-org">Centre Optique, sous la responsabilité de Corinne Vanreux</div>
+          <p class="exp-desc">Production de contenus vidéo courts pour Facebook et Instagram : tournage, montage sur CapCut, habillage et publication. Une immersion concrète dans la création de contenu pour un client réel, avec des délais et des attentes de rendu à respecter.</p>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+  
+  <section id="extras">
+    <div class="wrap">
+      <span class="clip-marker">EN DEHORS DES ÉCRANS DE MONTAGE</span>
+      <h2 class="section-title">Ce qui me fait vibrer</h2>
+      <p class="section-sub">Ce que je fais quand je ne monte pas, et qui nourrit quand même ma manière de raconter des histoires.</p>
+      
+      <div class="extras-grid">
+        <div class="extra-card">
+          <span class="tag mono">ANIME</span>
+          <h3>Amateur de romance</h3>
+          <p>Grand consommateur d'anime, avec un faible pour les histoires romantiques bien écrites : une source d'inspiration pour le rythme et l'émotion dans mes montages.</p>
+        </div>
+        <div class="extra-card">
+          <span class="tag mono">GAMING</span>
+          <h3>Jeux vidéo</h3>
+          <p>Joueur régulier, toujours curieux des nouvelles sorties. Le jeu vidéo m'a appris à penser en termes d'expérience utilisateur bien avant de faire du web.</p>
+        </div>
+        <div class="extra-card">
+          <span class="tag mono">LIVE</span>
+          <h3>Twitch</h3>
+          <p>Je m'intéresse au streaming et à la création de contenu en direct, une autre façon de raconter une histoire, cette fois en temps réel.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section id="contact" style="border-bottom:none;">
+    <div class="wrap contact-wrap">
+      <h2 class="contact-title">Un projet vidéo, photo ou web en tête ? Discutons-en.</h2>
+      <div class="contact-links">
+        <a href="mailto:jimmydang988@gmail.com">✉ jimmydang988@gmail.com</a>
+        <a href="https://www.instagram.com/jimmy.dngg/" target="_blank" rel="noopener">📸 Instagram</a>
+        <a href="https://www.tiktok.com/@jimmy.lift" target="_blank" rel="noopener">▶ TikTok</a>
+      </div>
+    </div>
+  </section>
+  
+  <footer>
+    <div class="wrap">© 2026 Jimmy · Nouméa, Nouvelle-Calédonie</div>
+  </footer>
+  
+  <script>
+    const fill = document.getElementById('playhead-fill');
+    const badge = document.getElementById('timecode-badge');
+    
+    function toTimecode(ratio){
+      const totalFrames = Math.floor(ratio * 3599);
+      const fps = 24;
+      const h = String(Math.floor(totalFrames/3600)).padStart(2,'0');
+      const m = String(Math.floor((totalFrames%3600)/60)).padStart(2,'0');
+      const s = String(Math.floor(totalFrames%60)).padStart(2,'0');
+      const f = String(Math.floor((ratio*997)%fps)).padStart(2,'0');
+      return `${h}:${m}:${s}:${f}`;
+    }
+    
+    function onScroll(){
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const ratio = docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0;
+      fill.style.width = (ratio*100) + '%';
+      badge.textContent = toTimecode(ratio);
+    }
+    document.addEventListener('scroll', onScroll);
+    onScroll();
+    
+    function goFullscreen(btn){
+      const iframe = btn.parentElement.querySelector('iframe');
+      if (!iframe) return;
+      if (iframe.requestFullscreen) iframe.requestFullscreen();
+      else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
+      else if (iframe.msRequestFullscreen) iframe.msRequestFullscreen();
+    }
+    
+    function openLightbox(src){
+      document.getElementById('lightbox-img').src = src;
+      document.getElementById('lightbox').classList.add('open');
+    }
+    function closeLightbox(){
+      document.getElementById('lightbox').classList.remove('open');
+      document.getElementById('lightbox-img').src = '';
+    }
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') closeLightbox();
+    });
+  </script>
+  <div id="lightbox" onclick="if(event.target.id==='lightbox') closeLightbox()">
+    <div id="lightbox-close" onclick="closeLightbox()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5f4f2" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </div>
+    <img id="lightbox-img" src="" alt="">
+  </div>
+  
+</body>
+</html>
